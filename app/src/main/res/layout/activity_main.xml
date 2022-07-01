@@ -88,10 +88,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
-        <LinearLayout
+        <androidx.gridlayout.widget.GridLayout
+            android:id="@+id/Chck_gridLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            app:columnCount="2"
+            app:useDefaultMargins="true">
+
+        </androidx.gridlayout.widget.GridLayout>
     </ScrollView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

@@ -3,26 +3,40 @@ package com.example.later2;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+import androidx.gridlayout.widget.GridLayout;
 
 import android.graphics.Color;
+import android.graphics.Point;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.GridView;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
 import java.util.Calendar;
+import java.util.List;
 //import android.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
 
     LocalData localData = new LocalData();
     DataBaseHelper dataBaseHelper = new DataBaseHelper(this);
+
+    int width = 0;
+    int height = 0;
+
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,9 +54,48 @@ public class MainActivity extends AppCompatActivity {
         addMainOptions();
         setUpBottomToolbar();
         checkFirstLogin();
+        setScreenSizes();
+        loadCheckLists();
+
+    }
+
+    void setScreenSizes(){
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        width = size.x;
+        height = size.y;
     }
 
     void loadCheckLists(){
+        GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
+        List<CheckLists> list = dataBaseHelper.getAll();
+        for(int i = 0; i<list.size();i++){
+            CardView card = new CardView(this);
+            TextView title = new TextView(this);
+            title.setText(list.get(i).getTitle());
+            title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+
+
+            TextView notesNum = new TextView(this);
+            notesNum.setText(""+list.get(i).getNumberInList());
+            notesNum.setTextSize(12);
+            notesNum.setPadding(10,10,0,0);
+
+            ImageButton favorite = new ImageButton(this);
+            favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_border_24));
+            //favorite.setBackground(getResources().getDrawable(R.drawable.ripple));
+            favorite.layout(width-100,0,0,0);
+
+
+            card.addView(favorite,100,100);
+            card.addView(notesNum);
+            card.addView(title,width/2-25,width/2-25);
+            card.setRadius(35);
+            card.setElevation(20);
+            gridLayout.addView(card,width/2-25,width/2-25);
+        }
+
 
     }
 
