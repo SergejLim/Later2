@@ -16,11 +16,13 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
+import java.util.Calendar;
 //import android.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
 
     LocalData localData = new LocalData();
+    DataBaseHelper dataBaseHelper = new DataBaseHelper(this);
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,10 +39,40 @@ public class MainActivity extends AppCompatActivity {
         });
         addMainOptions();
         setUpBottomToolbar();
+        checkFirstLogin();
+    }
+
+    void loadCheckLists(){
+
     }
 
     void showText(String text){
         Toast.makeText(findViewById(R.id.toolbar).getContext(), text, Toast.LENGTH_SHORT).show();
+    }
+
+    public void floatingAddClicked(View view){
+        //testEdit();
+        //testDelete();
+        showText(dataBaseHelper.getAll().toString());
+    }
+
+    void testDelete(){
+        CheckLists checkLists = dataBaseHelper.getAll().get(0);
+        boolean tmp = dataBaseHelper.deleteCheckList(checkLists);
+        showText("DELETED: " +tmp);
+    }
+
+    void testEdit(){
+        CheckLists checkLists = dataBaseHelper.getAll().get(0);
+        checkLists.setTitle("working");
+        dataBaseHelper.editCheckList(checkLists);
+    }
+
+    void test(){
+        CheckLists checkLists = new CheckLists(-1,"test","BLACK",
+                "","",false,"","","","normal","now","now",0,"");
+        boolean tmp = dataBaseHelper.addCheckList(checkLists);
+        showText("success: " + tmp);
     }
 
     void checkFirstLogin(){
@@ -51,6 +83,21 @@ public class MainActivity extends AppCompatActivity {
             localData.setDataBool("Settings","DarkMode",true,this.getApplicationContext());
             localData.setDataBool("Settings","Vibration",true,this.getApplicationContext());
             localData.setDataBool("Settings","AutoSync",false,this.getApplicationContext());
+            CheckLists checkLists = new CheckLists(-1,"To Do","#000000",
+                    "","",false,"","","","normal",
+                    Calendar.getInstance().getTime().toString(),Calendar.getInstance().getTime().toString(),0,"");
+            boolean tmp = dataBaseHelper.addCheckList(checkLists);
+            //showText("success: " + tmp);
+            checkLists = new CheckLists(-1,"Shopping","#FFFFFF",
+                    "","",false,"","","","normal",Calendar.getInstance().getTime().toString()
+                    ,Calendar.getInstance().getTime().toString(),0,"");
+            tmp = dataBaseHelper.addCheckList(checkLists);
+            //showText("success: " + tmp);
+            checkLists = new CheckLists(-1,"Watch Later","#00ffff",
+                    "","",false,"","","","movie",Calendar.getInstance().getTime().toString()
+                    ,Calendar.getInstance().getTime().toString(),0,"");
+            tmp = dataBaseHelper.addCheckList(checkLists);
+            showText("success: " + tmp);
         }
     }
 

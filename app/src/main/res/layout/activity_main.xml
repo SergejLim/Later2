@@ -104,6 +104,7 @@
         android:backgroundTint="@color/colorPrimaryLight"
         android:clickable="true"
         android:contentDescription="Add"
+        android:onClick="floatingAddClicked"
         app:layout_constraintBottom_toTopOf="@+id/tabLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:shapeAppearance="@style/TextAppearance.AppCompat"
