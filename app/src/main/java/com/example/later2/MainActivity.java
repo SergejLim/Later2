@@ -4,21 +4,29 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 import androidx.gridlayout.widget.GridLayout;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -71,32 +79,67 @@ public class MainActivity extends AppCompatActivity {
         GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
         List<CheckLists> list = dataBaseHelper.getAll();
         for(int i = 0; i<list.size();i++){
-            CardView card = new CardView(this);
-            TextView title = new TextView(this);
+            CardView card = new CardView(MainActivity.this);
+            Button title = new Button(MainActivity.this);
             title.setText(list.get(i).getTitle());
             title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            title.setTextSize(16);
+            title.setPadding(0,width/6,0,0);
 
+            TextView notesNum = new TextView(MainActivity.this);
 
-            TextView notesNum = new TextView(this);
+            Context context = title.getContext();
+            Drawable d;
+            try {
+                //showText(list.get(i).getIcon());
+                d = context.getResources().getDrawable(context.getResources().getIdentifier(list.get(i).getIcon(), "drawable", context.getPackageName()));
+                String col = list.get(i).getColor();
+                d.setTint(Color.parseColor(col));
+                d.setBounds(0,0,160,160);
+                title.setCompoundDrawables(null,d,null,null);
+            }catch (Exception e){
+                //showText(e.toString());
+            }
+
             notesNum.setText(""+list.get(i).getNumberInList());
             notesNum.setTextSize(12);
             notesNum.setPadding(10,10,0,0);
 
-            ImageButton favorite = new ImageButton(this);
+            ImageButton favorite = new ImageButton(MainActivity.this);
             favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_border_24));
-            //favorite.setBackground(getResources().getDrawable(R.drawable.ripple));
-            favorite.layout(width-100,0,0,0);
+            favorite.setId(R.id.test2);
 
+            ConstraintLayout constraintLayout = new ConstraintLayout(MainActivity.this);
+            constraintLayout.setId(R.id.test);
 
-            card.addView(favorite,100,100);
+            ConstraintSet set = new ConstraintSet();
+            constraintLayout.addView(favorite,85,85);
+            set.clone(constraintLayout);
+            set.connect(favorite.getId(), ConstraintSet.RIGHT, constraintLayout.getId(), ConstraintSet.RIGHT, 0);
+            set.applyTo(constraintLayout);
+            setButtonRipple(favorite);
+
+            card.addView(constraintLayout,width/2-25,width/2-25);
             card.addView(notesNum);
             card.addView(title,width/2-25,width/2-25);
+
+            title.setElevation(0);
+            constraintLayout.setElevation(12);
             card.setRadius(35);
             card.setElevation(20);
-            gridLayout.addView(card,width/2-25,width/2-25);
+            setButtonRipple(title);
+            gridLayout.addView(card);
         }
+    }
 
-
+    void setButtonRipple(View view){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // If we're running on Honeycomb or newer, then we can use the Theme's
+            // selectableItemBackground to ensure that the View has a pressed state
+            TypedValue outValue = new TypedValue();
+            this.getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true);
+            view.setBackgroundResource(outValue.resourceId);
+        }
     }
 
     void showText(String text){
@@ -106,18 +149,18 @@ public class MainActivity extends AppCompatActivity {
     public void floatingAddClicked(View view){
         //testEdit();
         //testDelete();
-        showText(dataBaseHelper.getAll().toString());
+        //loadCheckLists();
     }
 
     void testDelete(){
-        CheckLists checkLists = dataBaseHelper.getAll().get(0);
+        CheckLists checkLists = dataBaseHelper.getAll().get(2);
         boolean tmp = dataBaseHelper.deleteCheckList(checkLists);
         showText("DELETED: " +tmp);
     }
 
     void testEdit(){
         CheckLists checkLists = dataBaseHelper.getAll().get(0);
-        checkLists.setTitle("working");
+        checkLists.setIcon("ic_baseline_movie_24");
         dataBaseHelper.editCheckList(checkLists);
     }
 
@@ -137,17 +180,17 @@ public class MainActivity extends AppCompatActivity {
             localData.setDataBool("Settings","Vibration",true,this.getApplicationContext());
             localData.setDataBool("Settings","AutoSync",false,this.getApplicationContext());
             CheckLists checkLists = new CheckLists(-1,"To Do","#000000",
-                    "","",false,"","","","normal",
+                    "ic_baseline_movie_24","",false,"","","","normal",
                     Calendar.getInstance().getTime().toString(),Calendar.getInstance().getTime().toString(),0,"");
             boolean tmp = dataBaseHelper.addCheckList(checkLists);
             //showText("success: " + tmp);
             checkLists = new CheckLists(-1,"Shopping","#FFFFFF",
-                    "","",false,"","","","normal",Calendar.getInstance().getTime().toString()
+                    "ic_baseline_movie_24","",false,"","","","normal",Calendar.getInstance().getTime().toString()
                     ,Calendar.getInstance().getTime().toString(),0,"");
             tmp = dataBaseHelper.addCheckList(checkLists);
             //showText("success: " + tmp);
             checkLists = new CheckLists(-1,"Watch Later","#00ffff",
-                    "","",false,"","","","movie",Calendar.getInstance().getTime().toString()
+                    "ic_baseline_movie_24","",false,"","","","movie",Calendar.getInstance().getTime().toString()
                     ,Calendar.getInstance().getTime().toString(),0,"");
             tmp = dataBaseHelper.addCheckList(checkLists);
             showText("success: " + tmp);
@@ -244,5 +287,4 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
 }
