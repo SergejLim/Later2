@@ -28,6 +28,8 @@ public class DataBaseHelper extends SQLiteOpenHelper{
     public static final String DATE_EDITED = "DATE_EDITED";
     public static final String NUMBER_IN_LIST = "NUMBER_IN_LIST";
     public static final String CHCK_ORDER = "CHCK_ORDER";
+    public static final String NUMBER_UNTICKED = "NUMBER_UNTICKED";
+
     public static final String ID = "ID";
 
     public DataBaseHelper(@Nullable Context context) {
@@ -39,14 +41,13 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         String createTableStatement = "CREATE TABLE " + CHECKLIST_TABLE + " (" + ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + TITLE
                 + " TEXT, " + COLOR + " TEXT, " + ICON + " TEXT, " + PASSWORD + " TEXT, " +
                 FAVOURITE + " BOOL, " + CHCK_KEY + " TEXT, " + SHARED + " BOOL, " + LAYOUT + " TEXT" +
-                ", " + TYPE + " TEXT, " + DATE_CREATED + " TEXT, " + DATE_EDITED + " TEXT, " + NUMBER_IN_LIST + " INT, " + CHCK_ORDER + " TEXT)";
+                ", " + TYPE + " TEXT, " + DATE_CREATED + " TEXT, " + DATE_EDITED + " TEXT, " + NUMBER_IN_LIST + " INT, " + CHCK_ORDER + " TEXT "+", "+ NUMBER_UNTICKED + " INT)";
 
         sqLiteDatabase.execSQL(createTableStatement);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
-
     }
 
     public boolean addCheckList(CheckLists checkLists){
@@ -65,6 +66,8 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         cv.put(DATE_EDITED, checkLists.getDateEdited());
         cv.put(NUMBER_IN_LIST, checkLists.getNumberInList());
         cv.put(CHCK_ORDER, checkLists.getOrder());
+        cv.put(NUMBER_UNTICKED, checkLists.getNumberUnticked());
+
         long insert = db.insert(CHECKLIST_TABLE,null,cv);
         if(insert ==-1){
             return false;
@@ -82,9 +85,10 @@ public class DataBaseHelper extends SQLiteOpenHelper{
 
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(queryString,null);
-
+        System.out.println("NUMBER : " +cursor.getColumnCount());
         if( cursor.moveToFirst()){
             do{
+
                  int ID = cursor.getInt(0);
                  String TITLE = cursor.getString(1);
                  String COLOR =cursor.getString(2);
@@ -99,8 +103,9 @@ public class DataBaseHelper extends SQLiteOpenHelper{
                  String DATE_EDITED = cursor.getString(11);
                  int NUMBER_IN_LIST = cursor.getInt(12);
                  String CHCK_ORDER = cursor.getString(13);
+                 int NUMBER_UNTICKED = cursor.getInt(14);
 
-                 CheckLists checkLists = new CheckLists(ID, TITLE, COLOR,ICON,PASSWORD,FAVOURITE,CHCK_KEY,SHARED,LAYOUT,TYPE,DATE_CREATED,DATE_EDITED,NUMBER_IN_LIST,CHCK_ORDER);
+                 CheckLists checkLists = new CheckLists(ID, TITLE, COLOR,ICON,PASSWORD,FAVOURITE,CHCK_KEY,SHARED,LAYOUT,TYPE,DATE_CREATED,DATE_EDITED,NUMBER_IN_LIST,CHCK_ORDER,NUMBER_UNTICKED);
                  returnList.add(checkLists);
 
             }while (cursor.moveToNext());
@@ -110,6 +115,13 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         cursor.close();
         db.close();
         return returnList;
+    }
+
+    public void alterTable(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String queryString = "ALTER TABLE "+ CHECKLIST_TABLE + " ADD COLUMN " + NUMBER_UNTICKED + " INT DEFAULT 0;";
+        System.out.println(queryString);
+        db.execSQL(queryString);
     }
 
     public void editCheckList(CheckLists checkLists){
@@ -128,8 +140,9 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         DATE_CREATED+ " = '" + checkLists.getDateCreated()+"', "+
         DATE_EDITED+ " = '" + checkLists.getDateEdited()+"', "+
         NUMBER_IN_LIST+ " = " + checkLists.getNumberInList()+", "+
-        CHCK_ORDER+ " = '" + checkLists.getOrder()+
-                "' WHERE " + ID + " = " + checkLists.getId();
+        CHCK_ORDER+ " = '" + checkLists.getOrder()+"', "+
+        NUMBER_UNTICKED+ " = " + checkLists.getNumberUnticked()+
+                " WHERE " + ID + " = " + checkLists.getId();
         System.out.println(queryString);
          db.rawQuery(queryString, null);
     }

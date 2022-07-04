@@ -1,6 +1,7 @@
 package com.example.later2;
 
 import java.util.Date;
+import java.util.PrimitiveIterator;
 
 public class CheckLists {
 
@@ -18,9 +19,10 @@ public class CheckLists {
     private String dateEdited;
     private int numberInList;
     private String order;
+    private int numberUnticked;
 
 
-    public CheckLists(int id, String title, String color, String icon, String password, boolean favourite, String key, String shared, String layout, String type, String dateCreated, String dateEdited, int numberInList, String order) {
+    public CheckLists(int id, String title, String color, String icon, String password, boolean favourite, String key, String shared, String layout, String type, String dateCreated, String dateEdited, int numberInList, String order, int numberUnticked) {
         this.id = id;
         this.title = title;
         this.color = color;
@@ -35,6 +37,7 @@ public class CheckLists {
         this.dateEdited = dateEdited;
         this.numberInList = numberInList;
         this.order = order;
+        this.numberUnticked = numberUnticked;
     }
 
     @Override
@@ -54,6 +57,7 @@ public class CheckLists {
                 ", dateEdited=" + dateEdited +
                 ", numberInList=" + numberInList +
                 ", order='" + order + '\'' +
+                ", numberUnticked='" + numberUnticked + '\'' +
                 '}';
     }
 
@@ -166,7 +170,15 @@ public class CheckLists {
         return order;
     }
 
-    public void setOrder(String order) {
+    public void setOrder(String NumberUnticked) {
         this.order = order;
+    }
+
+    public int getNumberUnticked() {
+        return numberUnticked;
+    }
+
+    public void setNumberUnticked(int numberUnticked) {
+        this.numberUnticked = numberUnticked;
     }
 }

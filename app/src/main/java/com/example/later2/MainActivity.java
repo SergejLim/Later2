@@ -63,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
         setUpBottomToolbar();
         checkFirstLogin();
         setScreenSizes();
+        //dataBaseHelper.alterTable();
+        //dataBaseHelper.getAll().toString();
         loadCheckLists();
 
     }
@@ -83,9 +85,9 @@ public class MainActivity extends AppCompatActivity {
             Button title = new Button(MainActivity.this);
             title.setText(list.get(i).getTitle());
             title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            title.setTextSize(16);
-            title.setPadding(0,width/6,0,0);
-
+            title.setTextSize(18);
+            title.setPadding(0,width/7,0,0);
+            title.setTransformationMethod(null);
             TextView notesNum = new TextView(MainActivity.this);
 
             Context context = title.getContext();
@@ -101,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                 //showText(e.toString());
             }
 
-            notesNum.setText(""+list.get(i).getNumberInList());
+            notesNum.setText(""+list.get(i).getNumberUnticked()+ "/"+ list.get(i).getNumberInList());
             notesNum.setTextSize(12);
             notesNum.setPadding(10,10,0,0);
 
@@ -143,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void showText(String text){
-        Toast.makeText(findViewById(R.id.toolbar).getContext(), text, Toast.LENGTH_SHORT).show();
+        Toast.makeText(findViewById(R.id.toolbar).getContext(), text, Toast.LENGTH_LONG).show();
     }
 
     public void floatingAddClicked(View view){
@@ -153,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void testDelete(){
-        CheckLists checkLists = dataBaseHelper.getAll().get(2);
+        CheckLists checkLists = dataBaseHelper.getAll().get(0);
         boolean tmp = dataBaseHelper.deleteCheckList(checkLists);
         showText("DELETED: " +tmp);
     }
@@ -166,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
 
     void test(){
         CheckLists checkLists = new CheckLists(-1,"test","BLACK",
-                "","",false,"","","","normal","now","now",0,"");
+                "","",false,"","","","normal","now","now",0,"",0);
         boolean tmp = dataBaseHelper.addCheckList(checkLists);
         showText("success: " + tmp);
     }
@@ -179,21 +181,21 @@ public class MainActivity extends AppCompatActivity {
             localData.setDataBool("Settings","DarkMode",true,this.getApplicationContext());
             localData.setDataBool("Settings","Vibration",true,this.getApplicationContext());
             localData.setDataBool("Settings","AutoSync",false,this.getApplicationContext());
-            CheckLists checkLists = new CheckLists(-1,"To Do","#000000",
-                    "ic_baseline_movie_24","",false,"","","","normal",
-                    Calendar.getInstance().getTime().toString(),Calendar.getInstance().getTime().toString(),0,"");
-            boolean tmp = dataBaseHelper.addCheckList(checkLists);
-            //showText("success: " + tmp);
-            checkLists = new CheckLists(-1,"Shopping","#FFFFFF",
-                    "ic_baseline_movie_24","",false,"","","","normal",Calendar.getInstance().getTime().toString()
-                    ,Calendar.getInstance().getTime().toString(),0,"");
-            tmp = dataBaseHelper.addCheckList(checkLists);
-            //showText("success: " + tmp);
-            checkLists = new CheckLists(-1,"Watch Later","#00ffff",
+            CheckLists checkLists = new CheckLists(-1,"To Do","#FFB45C",
+                    "ic_baseline_content_paste_24","",false,"","","","normal",
+                    Calendar.getInstance().getTime().toString(),Calendar.getInstance().getTime().toString(),0,"",0);
+            dataBaseHelper.addCheckList(checkLists);
+
+            checkLists = new CheckLists(-1,"Shopping","#5CBBFF",
+                    "ic_baseline_shopping_cart_24","",false,"","","","normal",Calendar.getInstance().getTime().toString()
+                    ,Calendar.getInstance().getTime().toString(),0,"",0);
+            dataBaseHelper.addCheckList(checkLists);
+
+            checkLists = new CheckLists(-1,"Watch Later","#FF5263",
                     "ic_baseline_movie_24","",false,"","","","movie",Calendar.getInstance().getTime().toString()
-                    ,Calendar.getInstance().getTime().toString(),0,"");
-            tmp = dataBaseHelper.addCheckList(checkLists);
-            showText("success: " + tmp);
+                    ,Calendar.getInstance().getTime().toString(),0,"",0);
+            dataBaseHelper.addCheckList(checkLists);
+
         }
     }
 
