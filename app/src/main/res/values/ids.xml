@@ -3,5 +3,6 @@
 <resources>
     <item name="test" type="id"/>
     <item name="test2" type="id"/>
-    <item name="my_time_picker_1" type="id"/>
+    <item name="test3" type="id"/>
+    <item name="test4" type="id"/>
 </resources>

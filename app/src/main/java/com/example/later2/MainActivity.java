@@ -1,6 +1,7 @@
 package com.example.later2;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
@@ -9,30 +10,49 @@ import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 import androidx.gridlayout.widget.GridLayout;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.util.TypedValue;
 import android.view.Display;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.URLUtil;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
+
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 //import android.widget.Toolbar;
@@ -89,6 +109,8 @@ public class MainActivity extends AppCompatActivity {
             title.setPadding(0,width/7,0,0);
             title.setTransformationMethod(null);
             TextView notesNum = new TextView(MainActivity.this);
+            ConstraintSet set = new ConstraintSet();
+            ConstraintLayout constraintLayout = new ConstraintLayout(MainActivity.this);
 
             Context context = title.getContext();
             Drawable d;
@@ -111,13 +133,41 @@ public class MainActivity extends AppCompatActivity {
             favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_border_24));
             favorite.setId(R.id.test2);
 
-            ConstraintLayout constraintLayout = new ConstraintLayout(MainActivity.this);
+            if(!list.get(i).getPassword().equals("")){
+                ImageButton lock = new ImageButton(this);
+                lock.setForeground(getResources().getDrawable(R.drawable.ic_baseline_lock_open_24));
+                setButtonRipple(lock);
+                lock.setId(R.id.test3);
+                lock.setForegroundTintList(ColorStateList.valueOf(Color.GRAY));
+                set.connect(lock.getId(),ConstraintSet.BOTTOM, constraintLayout.getId(), ConstraintSet.BOTTOM, 15);
+                set.connect(lock.getId(),ConstraintSet.LEFT, constraintLayout.getId(), ConstraintSet.LEFT, 15);
+                constraintLayout.addView(lock,70,70);
+            }
+
+
+            ImageButton options = new ImageButton(this);
+            options.setForeground(getResources().getDrawable(R.drawable.ic_baseline_more_vert_24));
+            setButtonRipple(options);
+            options.setId(R.id.test4);
+            options.setOnClickListener(new View.OnClickListener() {
+                @RequiresApi(api = Build.VERSION_CODES.Q)
+                @Override
+                public void onClick(View view) {
+                    ImageButton btn = (ImageButton)view ;
+                    addOptionsToButtons(btn);
+                }
+            });
+
             constraintLayout.setId(R.id.test);
 
-            ConstraintSet set = new ConstraintSet();
-            constraintLayout.addView(favorite,85,85);
+            constraintLayout.addView(favorite,80,80);
+            constraintLayout.addView(options,80,80);
+
             set.clone(constraintLayout);
-            set.connect(favorite.getId(), ConstraintSet.RIGHT, constraintLayout.getId(), ConstraintSet.RIGHT, 0);
+            set.connect(favorite.getId(), ConstraintSet.RIGHT, constraintLayout.getId(), ConstraintSet.RIGHT, 2);
+            set.connect(options.getId(),ConstraintSet.BOTTOM, constraintLayout.getId(), ConstraintSet.BOTTOM, 15);
+            set.connect(options.getId(), ConstraintSet.RIGHT, constraintLayout.getId(), ConstraintSet.RIGHT, 10);
+
             set.applyTo(constraintLayout);
             setButtonRipple(favorite);
 
@@ -132,6 +182,31 @@ public class MainActivity extends AppCompatActivity {
             setButtonRipple(title);
             gridLayout.addView(card);
         }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    void addOptionsToButtons(ImageButton btn){
+        PopupMenu popupMenuT = new PopupMenu(this, btn);
+        popupMenuT.getMenu().add(Menu.NONE, 1, 1, "Edit");
+        popupMenuT.getMenu().findItem(1).setIcon(getResources().getDrawable(R.drawable.ic_baseline_edit_24));
+        popupMenuT.getMenu().add(Menu.NONE, 2, 2, "Delete");
+        popupMenuT.getMenu().findItem(2).setIcon(getResources().getDrawable(R.drawable.ic_baseline_delete_24));
+        popupMenuT.setGravity(Gravity.END);
+
+        popupMenuT.setForceShowIcon(true);
+        popupMenuT.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                //get id of the clicked item
+                int id = menuItem.getItemId();
+                //handle clicks
+                if(id==1){ //COPY
+
+                }
+                return false;
+            }
+        });
+        popupMenuT.show();
     }
 
     void setButtonRipple(View view){
@@ -236,9 +311,10 @@ public class MainActivity extends AppCompatActivity {
         //todo clear page
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle(text);
-
+        GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
+        gridLayout.removeAllViews();
         if(text=="Checklist" ){
-
+            loadCheckLists();
         }else if(text=="Notes"){
 
         }else if(text=="Settings"){
