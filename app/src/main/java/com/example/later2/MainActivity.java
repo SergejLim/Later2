@@ -10,6 +10,7 @@ import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 import androidx.gridlayout.widget.GridLayout;
 
+import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -64,6 +65,9 @@ public class MainActivity extends AppCompatActivity {
 
     int width = 0;
     int height = 0;
+    String openNote = "";
+    String accentColor = "#FF5555";
+    String currentAction = "";
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -99,9 +103,13 @@ public class MainActivity extends AppCompatActivity {
 
     void loadCheckLists(){
         GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
+        gridLayout.removeAllViews();
+
         List<CheckLists> list = dataBaseHelper.getAll();
         for(int i = 0; i<list.size();i++){
             CardView card = new CardView(MainActivity.this);
+            card.setTag(list.get(i).getId());
+
             Button title = new Button(MainActivity.this);
             title.setText(list.get(i).getTitle());
             title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -154,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View view) {
                     ImageButton btn = (ImageButton)view ;
-                    addOptionsToButtons(btn);
+                    addOptionsToButtons(btn,card.getTag().toString(),title.getText().toString());
                 }
             });
 
@@ -185,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    void addOptionsToButtons(ImageButton btn){
+    void addOptionsToButtons(ImageButton btn, String ChecklistId, String name){
         PopupMenu popupMenuT = new PopupMenu(this, btn);
         popupMenuT.getMenu().add(Menu.NONE, 1, 1, "Edit");
         popupMenuT.getMenu().findItem(1).setIcon(getResources().getDrawable(R.drawable.ic_baseline_edit_24));
@@ -200,13 +208,53 @@ public class MainActivity extends AppCompatActivity {
                 //get id of the clicked item
                 int id = menuItem.getItemId();
                 //handle clicks
-                if(id==1){ //COPY
-
+                if(id==1){ //EDIT
+                    currentAction = "edit";
+                    CheckLists ch = dataBaseHelper.getWithId(ChecklistId).get(0);
+                    createCardEditAdd(ch.getId(), ch.getTitle(),ch.getColor(),ch.getIcon());
+                }else if(id==2){//DELETE
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setTitle("Are you sure you want to delete all data for " + name + "?");
+                    // Set up the buttons
+                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dataBaseHelper.deleteCheckList(dataBaseHelper.getWithId(ChecklistId).get(0));
+                            loadCheckLists();
+                        }
+                    });
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }});
+                    builder.show();
                 }
                 return false;
             }
         });
         popupMenuT.show();
+    }
+
+    @Override
+    public void onBackPressed() {
+        ConstraintLayout cn = findViewById(R.id.extraLayout);
+        if (openNote.equals("") && currentAction.equals("")){
+            super.onBackPressed();
+        } else{
+            back(null);
+        }
+    }
+
+    public void back(View view){
+        if(currentAction.equals("addNew") || currentAction.equals("edit")){
+            currentAction = "";
+            ConstraintLayout cn = findViewById(R.id.extraLayout);
+            cn.removeAllViews();
+            FloatingActionButton floatingActionButton = findViewById(R.id.floatingActionButton);
+            floatingActionButton.setVisibility(View.VISIBLE);
+            cn.setVisibility(View.INVISIBLE);
+        }
     }
 
     void setButtonRipple(View view){
@@ -223,16 +271,159 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(findViewById(R.id.toolbar).getContext(), text, Toast.LENGTH_LONG).show();
     }
 
-    public void floatingAddClicked(View view){
-        //testEdit();
-        //testDelete();
-        //loadCheckLists();
+    void createCardEditAdd(int id, String givenText, String givenColor, String givenIcon){
+
+        //create new checklist
+        CardView card = new CardView(MainActivity.this);
+        card.setId(R.id.card);
+        card.setClickable(true);
+        EditText title = new EditText(MainActivity.this);
+        title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        title.setTextSize(18);
+        title.requestFocus();
+        title.setHint("Checklist Title");
+        title.setActivated(true);
+        title.setId(R.id.text1);
+        title.setText(givenText);
+
+        String colorToUse =accentColor;
+        if (givenColor!=null){
+            colorToUse=givenColor;
+        }
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //showkeyboard
+        imm.showSoftInput(title, InputMethodManager.SHOW_IMPLICIT);
+
+        ImageButton icon = new ImageButton(this);
+        icon.setId(R.id.test4);
+        setButtonRipple(icon);
+        icon.setForeground(getResources().getDrawable(R.drawable.ic_baseline_add_24));
+        icon.setTag("ic_baseline_add_24");
+
+        if(givenIcon!=null){
+            Context context = title.getContext();
+            Drawable d;
+            try {
+                d = context.getResources().getDrawable(context.getResources().getIdentifier(givenIcon, "drawable", context.getPackageName()));
+                icon.setForeground(d);
+                icon.setTag(givenIcon);
+            }catch (Exception e){
+            }
+        }
+
+        icon.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(colorToUse)));
+
+        ConstraintSet set = new ConstraintSet();
+        ConstraintLayout constraintLayout = new ConstraintLayout(MainActivity.this);
+
+        ImageButton color = new ImageButton(this);
+        color.setForeground(getResources().getDrawable(R.drawable.ic_baseline_color_lens_24));
+        color.setId(R.id.test2);
+        color.setTag(colorToUse);
+        setButtonRipple(color);
+        constraintLayout.addView(color,100,100);
+        color.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(colorToUse)));
+
+        Button cancel = new Button(this);
+        Button confirm = new Button(this);
+        cancel.setText("Cancel");
+        confirm.setText("Confirm");
+        cancel.setId(R.id.cancel);
+        confirm.setId(R.id.confirm);
+        confirm.setTextColor(Color.parseColor("#c66900"));
+        cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                back(null);
+            }
+        });
+        confirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(title.getText().length()==0){
+                    showText("Cannot add empty");
+                }else{
+                    if(currentAction.equals("addNew")){
+                        addNewCheckList(title.getText().toString(),color.getTag().toString(),icon.getTag().toString(),"","normal");
+                    }else if(currentAction.equals("edit")){
+                        CheckLists checkLists = dataBaseHelper.getWithId(String.valueOf(id)).get(0);
+                        checkLists.setTitle(title.getText().toString());
+                        checkLists.setIcon(icon.getTag().toString());
+                        checkLists.setColor(color.getTag().toString());
+                        dataBaseHelper.editCheckList(checkLists);
+                    }
+                    back(null);
+                    loadCheckLists();
+                }
+            }
+        });
+
+        ImageButton lock = new ImageButton(this);
+        lock.setForeground(getResources().getDrawable(R.drawable.ic_baseline_lock_open_24));
+        constraintLayout.setId(R.id.test);
+        setButtonRipple(lock);
+        lock.setId(R.id.test3);
+        constraintLayout.addView(lock,85,85);
+        constraintLayout.addView(icon,200,200);
+        constraintLayout.addView(title,(int)(width*0.8),150);
+
+        constraintLayout.addView(cancel);
+        constraintLayout.addView(confirm);
+
+        lock.setForegroundTintList(ColorStateList.valueOf(Color.GRAY));
+        set.clone(constraintLayout);
+        set.connect(lock.getId(),ConstraintSet.TOP, constraintLayout.getId(), ConstraintSet.TOP, 15);
+        set.connect(lock.getId(),ConstraintSet.LEFT, constraintLayout.getId(), ConstraintSet.LEFT, 15);
+
+        set.connect(color.getId(),ConstraintSet.RIGHT, constraintLayout.getId(), ConstraintSet.RIGHT, 15);
+        set.connect(color.getId(),ConstraintSet.TOP, constraintLayout.getId(), ConstraintSet.TOP, 15);
+
+        set.connect(icon.getId(),ConstraintSet.TOP, constraintLayout.getId(), ConstraintSet.TOP, 0);
+        set.connect(icon.getId(),ConstraintSet.BOTTOM, constraintLayout.getId(), ConstraintSet.BOTTOM, 150);
+        set.connect(icon.getId(),ConstraintSet.LEFT, constraintLayout.getId(), ConstraintSet.LEFT, 15);
+        set.connect(icon.getId(),ConstraintSet.RIGHT, constraintLayout.getId(), ConstraintSet.RIGHT, 15);
+
+        set.connect(title.getId(),ConstraintSet.BOTTOM, constraintLayout.getId(), ConstraintSet.BOTTOM, 160);
+
+        set.connect(cancel.getId(),ConstraintSet.BOTTOM, constraintLayout.getId(), ConstraintSet.BOTTOM, 10);
+        set.connect(cancel.getId(),ConstraintSet.LEFT, constraintLayout.getId(), ConstraintSet.LEFT, 10);
+        set.connect(cancel.getId(),ConstraintSet.RIGHT, confirm.getId(), ConstraintSet.LEFT, 10);
+
+        set.connect(confirm.getId(),ConstraintSet.BOTTOM, constraintLayout.getId(), ConstraintSet.BOTTOM, 10);
+        set.connect(confirm.getId(),ConstraintSet.RIGHT, constraintLayout.getId(), ConstraintSet.RIGHT, 10);
+        set.connect(confirm.getId(),ConstraintSet.LEFT, cancel.getId(), ConstraintSet.RIGHT, 10);
+
+        set.applyTo(constraintLayout);
+        card.addView(constraintLayout,(int)(width*0.8),(int)(width*0.8));
+
+
+        title.setElevation(0);
+        constraintLayout.setElevation(12);
+        card.setRadius(35);
+        card.setElevation(20);
+
+        ConstraintLayout extra = findViewById(R.id.extraLayout);
+
+        extra.setVisibility(View.VISIBLE);
+        ConstraintSet extraSet = new ConstraintSet();
+        extra.addView(card);
+        extraSet.clone(extra);
+
+        extraSet.connect(card.getId(),ConstraintSet.BOTTOM, extra.getId(), ConstraintSet.BOTTOM, 200);
+        extraSet.connect(card.getId(),ConstraintSet.LEFT, extra.getId(), ConstraintSet.LEFT, 15);
+        extraSet.connect(card.getId(),ConstraintSet.RIGHT, extra.getId(), ConstraintSet.RIGHT, 15);
+        extraSet.connect(card.getId(),ConstraintSet.TOP, extra.getId(), ConstraintSet.TOP, 10);
+        extraSet.applyTo(extra);
     }
 
-    void testDelete(){
-        CheckLists checkLists = dataBaseHelper.getAll().get(0);
-        boolean tmp = dataBaseHelper.deleteCheckList(checkLists);
-        showText("DELETED: " +tmp);
+    @SuppressLint("ResourceAsColor")
+    public void floatingAddClicked(View view){
+        view.setVisibility(View.INVISIBLE);
+        //create addition
+        if(openNote.equals("")){
+            currentAction = "addNew";
+            createCardEditAdd(0,"",null,null);
+        }
     }
 
     void testEdit(){
@@ -241,11 +432,11 @@ public class MainActivity extends AppCompatActivity {
         dataBaseHelper.editCheckList(checkLists);
     }
 
-    void test(){
-        CheckLists checkLists = new CheckLists(-1,"test","BLACK",
-                "","",false,"","","","normal","now","now",0,"",0);
-        boolean tmp = dataBaseHelper.addCheckList(checkLists);
-        showText("success: " + tmp);
+    void addNewCheckList(String name, String color, String icon, String password,String type){
+        CheckLists checkLists = new CheckLists(-1,name,color,
+                icon,password,false,"","","",type,
+                Calendar.getInstance().getTime().toString(),Calendar.getInstance().getTime().toString(),0,"",0);
+        dataBaseHelper.addCheckList(checkLists);
     }
 
     void checkFirstLogin(){

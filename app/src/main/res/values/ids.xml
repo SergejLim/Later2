@@ -5,4 +5,8 @@
     <item name="test2" type="id"/>
     <item name="test3" type="id"/>
     <item name="test4" type="id"/>
+    <item name="text1" type="id"/>
+    <item name="cancel" type="id"/>
+    <item name="confirm" type="id"/>
+    <item name="card" type="id"/>
 </resources>

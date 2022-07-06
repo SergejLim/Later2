@@ -115,4 +115,19 @@
         app:shapeAppearanceOverlay="@android:style/Widget.DeviceDefault.PopupMenu"
         app:srcCompat="@drawable/ic_baseline_add_24" />
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/extraLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:drawable/screen_background_dark_transparent"
+        android:clickable="true"
+        android:onClick="back"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/tabLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar">
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

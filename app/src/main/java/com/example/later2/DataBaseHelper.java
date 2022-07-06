@@ -78,9 +78,7 @@ public class DataBaseHelper extends SQLiteOpenHelper{
 
     public List<CheckLists> getAll(){
         List<CheckLists> returnList = new ArrayList<>();
-
         //get Data
-
         String queryString = "SELECT * FROM " + CHECKLIST_TABLE;
 
         SQLiteDatabase db = this.getReadableDatabase();
@@ -117,6 +115,44 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         return returnList;
     }
 
+    public List<CheckLists> getWithId(String id){
+        List<CheckLists> returnList = new ArrayList<>();
+        //get Data
+        String queryString = "SELECT * FROM " + CHECKLIST_TABLE + " WHERE " + ID + " = " + id;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(queryString,null);
+        if( cursor.moveToFirst()){
+            do{
+
+                int ID = cursor.getInt(0);
+                String TITLE = cursor.getString(1);
+                String COLOR =cursor.getString(2);
+                String ICON = cursor.getString(3);
+                String PASSWORD = cursor.getString(4);
+                boolean FAVOURITE =  cursor.getInt(5) ==1 ? true: false;
+                String CHCK_KEY = cursor.getString(6);
+                String SHARED = cursor.getString(7);
+                String LAYOUT = cursor.getString(8);
+                String TYPE = cursor.getString(9);
+                String DATE_CREATED = cursor.getString(10);
+                String DATE_EDITED = cursor.getString(11);
+                int NUMBER_IN_LIST = cursor.getInt(12);
+                String CHCK_ORDER = cursor.getString(13);
+                int NUMBER_UNTICKED = cursor.getInt(14);
+
+                CheckLists checkLists = new CheckLists(ID, TITLE, COLOR,ICON,PASSWORD,FAVOURITE,CHCK_KEY,SHARED,LAYOUT,TYPE,DATE_CREATED,DATE_EDITED,NUMBER_IN_LIST,CHCK_ORDER,NUMBER_UNTICKED);
+                returnList.add(checkLists);
+
+            }while (cursor.moveToNext());
+        }else{
+
+        }
+        cursor.close();
+        db.close();
+        return returnList;
+    }
+
     public void alterTable(){
         SQLiteDatabase db = this.getWritableDatabase();
         String queryString = "ALTER TABLE "+ CHECKLIST_TABLE + " ADD COLUMN " + NUMBER_UNTICKED + " INT DEFAULT 0;";
@@ -126,6 +162,7 @@ public class DataBaseHelper extends SQLiteOpenHelper{
 
     public void editCheckList(CheckLists checkLists){
         SQLiteDatabase db = this.getWritableDatabase();
+        System.out.println("HI "+checkLists.getTitle());
         String queryString = "UPDATE "+ CHECKLIST_TABLE +
                 " SET " +
                 TITLE + " = '" + checkLists.getTitle() +"', "+
@@ -144,7 +181,7 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         NUMBER_UNTICKED+ " = " + checkLists.getNumberUnticked()+
                 " WHERE " + ID + " = " + checkLists.getId();
         System.out.println(queryString);
-         db.rawQuery(queryString, null);
+        db.execSQL(queryString);
     }
 
     public boolean deleteCheckList(CheckLists checkLists){
