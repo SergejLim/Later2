@@ -169,7 +169,7 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         COLOR + " = '" + checkLists.getColor()+"', "+
         ICON+ " = '" + checkLists.getIcon()+"', "+
         PASSWORD+ " = '" + checkLists.getPassword()+"', "+
-        //FAVOURITE+ " = " + checkLists.isFavourite()+", "+
+        FAVOURITE+ " = " + checkLists.isFavourite()+", "+
         CHCK_KEY+ " = '" + checkLists.getKey()+"', "+
         SHARED+ " = '" + checkLists.getShared()+"', "+
         LAYOUT+ " = '" + checkLists.getLayout()+"', "+

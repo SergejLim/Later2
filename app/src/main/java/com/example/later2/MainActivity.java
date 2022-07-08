@@ -1,5 +1,6 @@
 package com.example.later2;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import androidx.core.content.ContextCompat;
 import androidx.gridlayout.widget.GridLayout;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -46,6 +48,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,12 +56,17 @@ import android.widget.Toast;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+
+import eltos.simpledialogfragment.SimpleDialog;
+import eltos.simpledialogfragment.color.SimpleColorDialog;
+import eltos.simpledialogfragment.color.SimpleColorWheelDialog;
 //import android.widget.Toolbar;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDialogResultListener{
 
     LocalData localData = new LocalData();
     DataBaseHelper dataBaseHelper = new DataBaseHelper(this);
@@ -66,9 +74,8 @@ public class MainActivity extends AppCompatActivity {
     int width = 0;
     int height = 0;
     String openNote = "";
-    String accentColor = "#FF5555";
+    String accentColor = "#FFB45C";
     String currentAction = "";
-
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,18 +94,7 @@ public class MainActivity extends AppCompatActivity {
         setUpBottomToolbar();
         checkFirstLogin();
         setScreenSizes();
-        //dataBaseHelper.alterTable();
-        //dataBaseHelper.getAll().toString();
         loadCheckLists();
-
-    }
-
-    void setScreenSizes(){
-        Display display = getWindowManager().getDefaultDisplay();
-        Point size = new Point();
-        display.getSize(size);
-        width = size.x;
-        height = size.y;
     }
 
     void loadCheckLists(){
@@ -123,22 +119,41 @@ public class MainActivity extends AppCompatActivity {
             Context context = title.getContext();
             Drawable d;
             try {
-                //showText(list.get(i).getIcon());
                 d = context.getResources().getDrawable(context.getResources().getIdentifier(list.get(i).getIcon(), "drawable", context.getPackageName()));
                 String col = list.get(i).getColor();
                 d.setTint(Color.parseColor(col));
                 d.setBounds(0,0,160,160);
                 title.setCompoundDrawables(null,d,null,null);
-            }catch (Exception e){
-                //showText(e.toString());
-            }
+            }catch (Exception e){}
 
             notesNum.setText(""+list.get(i).getNumberUnticked()+ "/"+ list.get(i).getNumberInList());
             notesNum.setTextSize(12);
             notesNum.setPadding(10,10,0,0);
 
             ImageButton favorite = new ImageButton(MainActivity.this);
-            favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_border_24));
+            if(list.get(i).isFavourite()){
+                favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_24));
+                favorite.setTag(true);
+            }else{
+                favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_border_24));
+                favorite.setTag(false);
+            }
+            favorite.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    CheckLists checkLists = dataBaseHelper.getWithId(String.valueOf(card.getTag())).get(0);
+                    if(favorite.getTag().equals(true)){
+                        favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_border_24));
+                        favorite.setTag(false);
+                        checkLists.setFavourite(false);
+                    }else{
+                        favorite.setForeground(getResources().getDrawable(R.drawable.ic_baseline_favorite_24));
+                        favorite.setTag(true);
+                        checkLists.setFavourite(true);
+                    }
+                    dataBaseHelper.editCheckList(checkLists);
+                }
+            });
             favorite.setId(R.id.test2);
 
             if(!list.get(i).getPassword().equals("")){
@@ -254,51 +269,108 @@ public class MainActivity extends AppCompatActivity {
             FloatingActionButton floatingActionButton = findViewById(R.id.floatingActionButton);
             floatingActionButton.setVisibility(View.VISIBLE);
             cn.setVisibility(View.INVISIBLE);
+            TabLayout tabLayout = findViewById(R.id.tabLayout);
+            tabLayout.setVisibility(View.VISIBLE);
+        }else if (currentAction.contains("iconSelect")){
+            currentAction = currentAction.replace("iconSelect","");
+            ConstraintLayout cn = findViewById(R.id.extraLayout);
+            cn.removeViewAt(1);
         }
     }
 
-    void setButtonRipple(View view){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            // If we're running on Honeycomb or newer, then we can use the Theme's
-            // selectableItemBackground to ensure that the View has a pressed state
-            TypedValue outValue = new TypedValue();
-            this.getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true);
-            view.setBackgroundResource(outValue.resourceId);
+    @Override public boolean onResult(@NonNull String dialogTag, int which, @NonNull Bundle extras) {
+        if (which == BUTTON_POSITIVE ){
+            int color = extras.getInt(SimpleColorDialog.COLOR);
+            String hexColor = String.format("#%06X", (0xFFFFFF & color));
+            outColor.setTag(hexColor);
+            outColor.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(hexColor)));
+            outIcon.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(hexColor)));
+            return true;
         }
+        return false;
     }
 
-    void showText(String text){
-        Toast.makeText(findViewById(R.id.toolbar).getContext(), text, Toast.LENGTH_LONG).show();
-    }
-
+    ImageButton outIcon;
+    ImageButton outColor;
     void createCardEditAdd(int id, String givenText, String givenColor, String givenIcon){
+        FloatingActionButton fl = findViewById(R.id.floatingActionButton);
+        fl.setVisibility(View.INVISIBLE);
+        TabLayout tabLayout = findViewById(R.id.tabLayout);
+        tabLayout.setVisibility(View.INVISIBLE);
 
-        //create new checklist
         CardView card = new CardView(MainActivity.this);
         card.setId(R.id.card);
         card.setClickable(true);
+        String action =currentAction;
+
         EditText title = new EditText(MainActivity.this);
         title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         title.setTextSize(18);
         title.requestFocus();
         title.setHint("Checklist Title");
-        title.setActivated(true);
+        //title.setActivated(true);
         title.setId(R.id.text1);
         title.setText(givenText);
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //showkeyboard
+        imm.showSoftInput(title, InputMethodManager.SHOW_IMPLICIT);
 
         String colorToUse =accentColor;
         if (givenColor!=null){
             colorToUse=givenColor;
         }
 
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //showkeyboard
-        imm.showSoftInput(title, InputMethodManager.SHOW_IMPLICIT);
-
         ImageButton icon = new ImageButton(this);
         icon.setId(R.id.test4);
         setButtonRipple(icon);
-        icon.setForeground(getResources().getDrawable(R.drawable.ic_baseline_add_24));
-        icon.setTag("ic_baseline_add_24");
+        icon.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("ResourceAsColor")
+            @Override
+            public void onClick(View view) {
+                hideKeyboard(MainActivity.this);
+                currentAction =currentAction+ "iconSelect";
+                Field[] drawablesFields = R.drawable.class.getFields();
+                ScrollView scrollView = new ScrollView(MainActivity.this);
+                GridLayout layout = new GridLayout(MainActivity.this);
+                layout.setColumnCount(5);
+                ConstraintLayout extra = findViewById(R.id.extraLayout);
+                scrollView.addView(layout);
+                extra.addView(scrollView,1);
+                layout.setBackgroundColor(Color.parseColor("#000000"));
+                layout.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        extra.removeView(scrollView);
+                        currentAction=action;
+                    }});
+                //todo SEARCH
+                scrollView.setElevation(10);
+                for (Field field : drawablesFields) {
+                    try {
+                        if(field.getName().contains("ic_") && field.getName().contains("_24")){
+                            Button btn = new Button(MainActivity.this);
+
+                            btn.setForeground(getResources().getDrawable(field.getInt(null)));
+
+                            btn.setText(field.getName());
+                            btn.setTextSize(0);
+                            btn.setForegroundTintList(ColorStateList.valueOf(Color.parseColor("#ffffff")));
+                            btn.setOnClickListener(new View.OnClickListener() {
+                                public void onClick(View view) {
+                                    icon.setForeground(btn.getForeground());
+                                    icon.setTag(btn.getText().toString());
+                                    extra.removeView(scrollView);
+                                    currentAction=action;
+                                }
+                            });
+                            layout.addView(btn,width/5,width/5);
+                        }
+                    } catch (Exception e) {}
+                }
+            }
+        });
+        icon.setForeground(getResources().getDrawable(R.drawable.ic_baseline_star_24));
+        icon.setTag("ic_baseline_star_24");
+        outIcon = icon;
 
         if(givenIcon!=null){
             Context context = title.getContext();
@@ -307,10 +379,8 @@ public class MainActivity extends AppCompatActivity {
                 d = context.getResources().getDrawable(context.getResources().getIdentifier(givenIcon, "drawable", context.getPackageName()));
                 icon.setForeground(d);
                 icon.setTag(givenIcon);
-            }catch (Exception e){
-            }
+            }catch (Exception e){ }
         }
-
         icon.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(colorToUse)));
 
         ConstraintSet set = new ConstraintSet();
@@ -323,11 +393,26 @@ public class MainActivity extends AppCompatActivity {
         setButtonRipple(color);
         constraintLayout.addView(color,100,100);
         color.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(colorToUse)));
+        outColor = color;
+        color.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int[] clr = new int[]{ Color.parseColor("#c66900"),Color.parseColor("#FF5263"),Color.parseColor("#FFB45C"),Color.parseColor("#FFD952"),
+                        Color.parseColor("#82FF6E"), Color.parseColor("#6EFFE5"),Color.parseColor("#5CBBFF")
+                        ,Color.parseColor("#9E52FF"),Color.parseColor("#FF6EC5"),Color.parseColor("#FFFFFF"),Color.parseColor("#000000") };
+                SimpleColorDialog.build()
+                        .colors(clr)
+                        .allowCustom(true)
+                        .show(MainActivity.this);
+            }
+        });
 
         Button cancel = new Button(this);
         Button confirm = new Button(this);
         cancel.setText("Cancel");
         confirm.setText("Confirm");
+        setButtonEffect(confirm);
+        setButtonEffect(cancel);
         cancel.setId(R.id.cancel);
         confirm.setId(R.id.confirm);
         confirm.setTextColor(Color.parseColor("#c66900"));
@@ -396,11 +481,10 @@ public class MainActivity extends AppCompatActivity {
         set.applyTo(constraintLayout);
         card.addView(constraintLayout,(int)(width*0.8),(int)(width*0.8));
 
-
         title.setElevation(0);
         constraintLayout.setElevation(12);
         card.setRadius(35);
-        card.setElevation(20);
+        card.setElevation(1);
 
         ConstraintLayout extra = findViewById(R.id.extraLayout);
 
@@ -414,6 +498,20 @@ public class MainActivity extends AppCompatActivity {
         extraSet.connect(card.getId(),ConstraintSet.RIGHT, extra.getId(), ConstraintSet.RIGHT, 15);
         extraSet.connect(card.getId(),ConstraintSet.TOP, extra.getId(), ConstraintSet.TOP, 10);
         extraSet.applyTo(extra);
+    }
+
+    public void bottomNavigationClicked(String text){
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle(text);
+        GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
+        gridLayout.removeAllViews();
+        if(text=="Checklist" ){
+            loadCheckLists();
+        }else if(text=="Notes"){
+
+        }else if(text=="Settings"){
+
+        }
     }
 
     @SuppressLint("ResourceAsColor")
@@ -430,6 +528,28 @@ public class MainActivity extends AppCompatActivity {
         CheckLists checkLists = dataBaseHelper.getAll().get(0);
         checkLists.setIcon("ic_baseline_movie_24");
         dataBaseHelper.editCheckList(checkLists);
+    }
+
+    void setButtonRipple(View view){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // If we're running on Honeycomb or newer, then we can use the Theme's// selectableItemBackground to ensure that the View has a pressed state
+            TypedValue outValue = new TypedValue();
+            this.getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true);
+            view.setBackgroundResource(outValue.resourceId);
+        }
+    }
+
+    void setButtonEffect(View view){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // If we're running on Honeycomb or newer, then we can use the Theme's// selectableItemBackground to ensure that the View has a pressed state
+            TypedValue outValue = new TypedValue();
+            this.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+            view.setBackgroundResource(outValue.resourceId);
+        }
+    }
+
+    void showText(String text){
+        Toast.makeText(findViewById(R.id.toolbar).getContext(), text, Toast.LENGTH_LONG).show();
     }
 
     void addNewCheckList(String name, String color, String icon, String password,String type){
@@ -465,9 +585,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    void setScreenSizes(){
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        width = size.x;
+        height = size.y;
+    }
+
     void setUpBottomToolbar(){
         TabLayout tabLayout = findViewById(R.id.tabLayout);
         TabLayout.Tab tab = tabLayout.getTabAt(0);
+
         tab.view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -498,19 +627,15 @@ public class MainActivity extends AppCompatActivity {
         popupMenu.show();
     }
 
-    public void bottomNavigationClicked(String text){
-        //todo clear page
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle(text);
-        GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
-        gridLayout.removeAllViews();
-        if(text=="Checklist" ){
-            loadCheckLists();
-        }else if(text=="Notes"){
-
-        }else if(text=="Settings"){
-
+    public static void hideKeyboard(Activity activity) {
+        InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = activity.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(activity);
         }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
     PopupMenu popupMenu;
