@@ -10,6 +10,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 import androidx.gridlayout.widget.GridLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -82,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //toolbar
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationIcon(null);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
@@ -97,6 +98,23 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
         loadCheckLists();
     }
 
+    void loadCheckListData(String FId){
+        CheckListDataHelper helper = new CheckListDataHelper(MainActivity.this);
+        List<CheckListData> data = helper.getWithFId(FId);
+        SwipeRefreshLayout swipeRefreshLayout =findViewById(R.id.list_swipe_refresh_layout);
+        LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
+
+        swipeRefreshLayout.setVisibility(View.VISIBLE);
+        if (data.size()==0){
+            ImageButton imageButton = new ImageButton(MainActivity.this);
+            imageButton.setBackgroundResource(R.drawable.empty_list);
+            linearLayout.addView(imageButton, width,width);
+        }
+        else{
+
+        }
+    }
+
     void loadCheckLists(){
         GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
         gridLayout.removeAllViews();
@@ -108,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
 
             Button title = new Button(MainActivity.this);
             title.setText(list.get(i).getTitle());
+            title.setTag(list.get(i).getId());
             title.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             title.setTextSize(18);
             title.setPadding(0,width/7,0,0);
@@ -115,6 +134,14 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
             TextView notesNum = new TextView(MainActivity.this);
             ConstraintSet set = new ConstraintSet();
             ConstraintLayout constraintLayout = new ConstraintLayout(MainActivity.this);
+            title.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    //todo BUTTON CLICK
+                    openNote = title.getTag().toString();
+                    loadCheckListData(title.getTag().toString());
+                }
+            });
 
             Context context = title.getContext();
             Drawable d;
@@ -275,6 +302,13 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
             currentAction = currentAction.replace("iconSelect","");
             ConstraintLayout cn = findViewById(R.id.extraLayout);
             cn.removeViewAt(1);
+        }
+        else if(!openNote.equals("")){
+            LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
+            linearLayout.removeAllViews();
+            SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.list_swipe_refresh_layout);
+            swipeRefreshLayout.setVisibility(View.INVISIBLE);
+            openNote = "";
         }
     }
 
@@ -505,11 +539,11 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
         toolbar.setTitle(text);
         GridLayout gridLayout = findViewById(R.id.Chck_gridLayout);
         gridLayout.removeAllViews();
-        if(text=="Checklist" ){
+        if(text.equals("Checklist")){
             loadCheckLists();
-        }else if(text=="Notes"){
+        }else if(text.equals("Notes")){
 
-        }else if(text=="Settings"){
+        }else if(text.equals("Settings")){
 
         }
     }
@@ -531,21 +565,21 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
     }
 
     void setButtonRipple(View view){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             // If we're running on Honeycomb or newer, then we can use the Theme's// selectableItemBackground to ensure that the View has a pressed state
             TypedValue outValue = new TypedValue();
             this.getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true);
             view.setBackgroundResource(outValue.resourceId);
-        }
+        //}
     }
 
     void setButtonEffect(View view){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             // If we're running on Honeycomb or newer, then we can use the Theme's// selectableItemBackground to ensure that the View has a pressed state
             TypedValue outValue = new TypedValue();
             this.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
             view.setBackgroundResource(outValue.resourceId);
-        }
+        //}
     }
 
     void showText(String text){
