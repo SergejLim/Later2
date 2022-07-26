@@ -162,7 +162,6 @@ public class DataBaseHelper extends SQLiteOpenHelper{
 
     public void editCheckList(CheckLists checkLists){
         SQLiteDatabase db = this.getWritableDatabase();
-        System.out.println("HI "+checkLists.getTitle());
         String queryString = "UPDATE "+ CHECKLIST_TABLE +
                 " SET " +
                 TITLE + " = '" + checkLists.getTitle() +"', "+
@@ -180,8 +179,8 @@ public class DataBaseHelper extends SQLiteOpenHelper{
         CHCK_ORDER+ " = '" + checkLists.getOrder()+"', "+
         NUMBER_UNTICKED+ " = " + checkLists.getNumberUnticked()+
                 " WHERE " + ID + " = " + checkLists.getId();
-        System.out.println(queryString);
         db.execSQL(queryString);
+
     }
 
     public boolean deleteCheckList(CheckLists checkLists){

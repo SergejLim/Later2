@@ -21,6 +21,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -29,6 +30,8 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -48,6 +51,7 @@ import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.NumberPicker;
 import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
@@ -88,9 +92,18 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ToolbarBackbtnClicked(view);
+                back(view);
             }
         });
+        SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.list_swipe_refresh_layout);
+        // Refresh  the layout
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                resetNotes();
+                swipeRefreshLayout.setRefreshing(false); }
+        }
+        );
         addMainOptions();
         setUpBottomToolbar();
         checkFirstLogin();
@@ -98,20 +111,202 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
         loadCheckLists();
     }
 
-    void loadCheckListData(String FId){
+    void resetNotes(){
+        if(!currentAction.equals("")){
+            back(null);
+        }
+        DataBaseHelper helper = new DataBaseHelper(this);
+        String title = helper.getWithId(openNote).get(0).getTitle();
+        LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
+        linearLayout.removeAllViews();
+        loadCheckListData(openNote,title);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    void addOptionsToListButtons(ImageButton btn, String text, String idRecieved, int pos,CardView cardView){
+        PopupMenu popupMenuT = new PopupMenu(this, btn);
+        popupMenuT.getMenu().add(Menu.NONE, 0, 0, "Copy"); //parm 2 is menu id, param 3 is position of this menu item in menu items list, param 4 is title of the menu
+        popupMenuT.getMenu().findItem(0).setIcon(getResources().getDrawable(R.drawable.ic_baseline_content_copy_24));
+        popupMenuT.getMenu().add(Menu.NONE, 1, 1, "Edit");
+        popupMenuT.getMenu().findItem(1).setIcon(getResources().getDrawable(R.drawable.ic_baseline_edit_24));
+        popupMenuT.getMenu().add(Menu.NONE, 2, 2, "Remove");
+        popupMenuT.getMenu().findItem(2).setIcon(getResources().getDrawable(R.drawable.ic_baseline_delete_24));
+        popupMenuT.setGravity(Gravity.END);
+        if(URLUtil.isValidUrl(text)){
+            popupMenuT.getMenu().add(Menu.NONE, 3, 3, "Visit Page");
+            popupMenuT.getMenu().findItem(3).setIcon(getResources().getDrawable(R.drawable.ic_baseline_open_in_browser_24));
+        }
+        if(text.length()>50){
+            popupMenuT.getMenu().add(Menu.NONE, 4, 4, "View Full Note");
+            popupMenuT.getMenu().findItem(4).setIcon(getResources().getDrawable(R.drawable.ic_baseline_remove_red_eye_24));
+        }
+        popupMenuT.setForceShowIcon(true);
+        popupMenuT.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                //get id of the clicked item
+                int id = menuItem.getItemId();
+                //handle clicks
+                if(id==0){ //COPY
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("label", text);
+                    clipboard.setPrimaryClip(clip);
+                }
+                else if (id==1){ //EDIT
+                    FloatingActionButton floatingActionButton = findViewById(R.id.floatingActionButton);
+                    floatingActionButton.setVisibility(View.INVISIBLE);
+                    cardView.setVisibility(View.GONE);
+                    //todo get data with id and pass onto sub, then update confirm btn and edit the thing.
+                    CheckListData data = checkListDataHelper.getWithId(String.valueOf(idRecieved)).get(0);
+                    currentAction = "editListItem";
+                    cardForNewListItem(data.getTitle(),data.getDescription(),data.getColor(),-1,pos,data.getId());
+                }
+                else if (id==2){ // REMOVE
+                    CheckListData data = checkListDataHelper.getWithId(String.valueOf(idRecieved)).get(0);
+                    checkListDataHelper.deleteCheckListData(data);
+                    cardView.setVisibility(View.GONE);
+                }
+                else if(id==3){
+                    Intent browse = new Intent( Intent.ACTION_VIEW , Uri.parse( text ) );
+                    startActivity( browse );
+                }
+                else if(id==4){
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setMessage(text);
+                    // Set up the buttons
+                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
+                    builder.show();
+                }
+                return false;
+            }
+        });
+        popupMenuT.show();
+    }
+
+    void loadCheckListData(String FId,String title){
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setNavigationIcon(R.drawable.ic_baseline_arrow_back_24);
+        toolbar.setTitle(title);
+
         CheckListDataHelper helper = new CheckListDataHelper(MainActivity.this);
         List<CheckListData> data = helper.getWithFId(FId);
         SwipeRefreshLayout swipeRefreshLayout =findViewById(R.id.list_swipe_refresh_layout);
         LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
 
         swipeRefreshLayout.setVisibility(View.VISIBLE);
-        if (data.size()==0){
+        if (data.size()==0){ //empty list
             ImageButton imageButton = new ImageButton(MainActivity.this);
             imageButton.setBackgroundResource(R.drawable.empty_list);
             linearLayout.addView(imageButton, width,width);
         }
         else{
+            for(int i =0; i< data.size();i++){
+                LinearLayout linearLayoutHor = findViewById(R.id.LinearListLayout);
 
+                LinearLayout innerLinear = new LinearLayout(this);
+                innerLinear.setGravity(Gravity.CENTER_VERTICAL);
+                innerLinear.setTag(i);
+                LinearLayout expandableLayout = new LinearLayout(this);
+
+
+                CardView cardView = new CardView(MainActivity.this);
+                cardView.setTag(data.get(i).getId());
+                ImageButton color = new ImageButton(MainActivity.this);
+                //color.setForeground(getResources().getDrawable(R.drawable.ic_baseline_color_lens_24));
+                //color.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(accentColor)));
+                color.setBackgroundColor(Color.parseColor(data.get(i).getColor()));
+
+                TextView txttitle = new TextView(this);
+                txttitle.setTextSize(16);
+                txttitle.setTag(String.valueOf(data.get(i).isTicked()));
+                if(data.get(i).isTicked()){
+                    txttitle.setPaintFlags(txttitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                    txttitle.setTextColor(Color.rgb(100, 100, 100));
+                }
+                else{
+                    txttitle.setTextColor(Color.WHITE);
+                }
+
+                setButtonEffect(txttitle);
+                txttitle.setGravity(Gravity.CENTER_VERTICAL);
+                txttitle.setPadding(20,0,0,0);
+
+                txttitle.setText(data.get(i).getTitle());
+                txttitle.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        CheckListData checkListData = checkListDataHelper.getWithId(String.valueOf(cardView.getTag())).get(0);
+                        if(txttitle.getTag().equals("true")){
+                            txttitle.setPaintFlags(txttitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                            txttitle.setTextColor(Color.WHITE);
+                            txttitle.setTag("false");
+                            checkListData.setTicked(false);
+                        }else{
+                            txttitle.setPaintFlags(txttitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                            txttitle.setTextColor(Color.rgb(100, 100, 100));
+                            txttitle.setTag("true");
+                            checkListData.setTicked(true);
+                        }
+                        checkListDataHelper.editCheckListData(checkListData);
+                    }
+                });
+
+                LinearLayout extra = new LinearLayout(this);
+                TextView description = new TextView(this);
+                description.setText(data.get(i).getDescription());
+                extra.addView(description,width,150);
+                extra.setVisibility(View.GONE);
+
+                expandableLayout.addView(innerLinear);
+                expandableLayout.addView(extra);
+                expandableLayout.setOrientation(LinearLayout.VERTICAL);
+
+                ImageButton options = new ImageButton(this);
+                ImageButton expand = new ImageButton(this);
+                setButtonRipple(expand);
+                setButtonRipple(options);
+
+
+                options.setForeground(getResources().getDrawable(R.drawable.ic_baseline_more_vert_24));
+                options.setOnClickListener(new View.OnClickListener() {
+                    @RequiresApi(api = Build.VERSION_CODES.Q)
+                    @Override
+                    public void onClick(View view) {
+
+                        ImageButton tmpbtn =   (ImageButton) view;
+                        addOptionsToListButtons(tmpbtn, txttitle.getText().toString(),cardView.getTag().toString(),Integer.parseInt(innerLinear.getTag().toString()),cardView);
+                    }
+                });
+                expand.setForeground(getResources().getDrawable(R.drawable.ic_baseline_expand_more_24));
+                expand.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        TransitionManager.beginDelayedTransition(cardView,
+                                new AutoTransition());
+                        if(extra.getVisibility()==View.VISIBLE){
+                            extra.setVisibility(View.GONE);
+                            expand.setForeground(getResources().getDrawable(R.drawable.ic_baseline_expand_more_24));
+                        }else{
+                            extra.setVisibility(View.VISIBLE);
+                            expand.setForeground(getResources().getDrawable(R.drawable.ic_baseline_expand_less_24));
+                        }
+                    }
+                });
+
+                cardView.addView(expandableLayout);
+
+                innerLinear.addView(color,15,180);
+                innerLinear.addView(txttitle,width-(115*2),180);
+                innerLinear.addView(expand,100,100);
+                innerLinear.addView(options,80,80);
+
+                linearLayout.addView(cardView);
+            }
         }
     }
 
@@ -137,9 +332,8 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
             title.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    //todo BUTTON CLICK
                     openNote = title.getTag().toString();
-                    loadCheckListData(title.getTag().toString());
+                    loadCheckListData(title.getTag().toString(),title.getText().toString());
                 }
             });
 
@@ -303,12 +497,30 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
             ConstraintLayout cn = findViewById(R.id.extraLayout);
             cn.removeViewAt(1);
         }
+        else if (currentAction.equals("newListItem")){
+            LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
+            linearLayout.removeViewAt(0);
+            currentAction = "";
+            FloatingActionButton floatingActionButton = findViewById(R.id.floatingActionButton);
+            floatingActionButton.setVisibility(View.VISIBLE);
+        }
+        else if (currentAction.equals("editListItem")){
+            //LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
+            //linearLayout.removeViewAt(0);
+            currentAction = "";
+            resetNotes();
+            FloatingActionButton floatingActionButton = findViewById(R.id.floatingActionButton);
+            floatingActionButton.setVisibility(View.VISIBLE);
+        }
         else if(!openNote.equals("")){
             LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
             linearLayout.removeAllViews();
             SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.list_swipe_refresh_layout);
             swipeRefreshLayout.setVisibility(View.INVISIBLE);
             openNote = "";
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            toolbar.setNavigationIcon(null);
+            toolbar.setTitle("CheckList");
         }
     }
 
@@ -318,7 +530,9 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
             String hexColor = String.format("#%06X", (0xFFFFFF & color));
             outColor.setTag(hexColor);
             outColor.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(hexColor)));
-            outIcon.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(hexColor)));
+            if(!currentAction.equals("newListItem") && !currentAction.equals("editListItem")){
+                outIcon.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(hexColor)));
+            }
             return true;
         }
         return false;
@@ -342,7 +556,6 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
         title.setTextSize(18);
         title.requestFocus();
         title.setHint("Checklist Title");
-        //title.setActivated(true);
         title.setId(R.id.text1);
         title.setText(givenText);
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); //showkeyboard
@@ -556,6 +769,121 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
             currentAction = "addNew";
             createCardEditAdd(0,"",null,null);
         }
+        else{
+            currentAction = "newListItem";
+            cardForNewListItem(null,null,null,-1,0,-1);
+        }
+    }
+
+    void cardForNewListItem(String titletxt, String descriptiontxt, String colortxt, int ratingtxt, int position, int givenID){
+        LinearLayout linearLayout = findViewById(R.id.LinearListLayout);
+
+        LinearLayout innerLinear = new LinearLayout(this);
+        innerLinear.setGravity(Gravity.CENTER_VERTICAL);
+
+        LinearLayout expandableLayout = new LinearLayout(this);
+
+
+        CardView cardView = new CardView(MainActivity.this);
+        ImageButton color = new ImageButton(MainActivity.this);
+        color.setForeground(getResources().getDrawable(R.drawable.ic_baseline_color_lens_24));
+        if(colortxt ==null){
+            color.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(accentColor)));
+            color.setTag(accentColor);
+        }else{
+            color.setForegroundTintList(ColorStateList.valueOf(Color.parseColor(colortxt)));
+            color.setTag(colortxt);
+        }
+        setButtonRipple(color);
+
+        outColor = color;
+        color.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int[] clr = new int[]{ Color.parseColor("#c66900"),Color.parseColor("#FF5263"),Color.parseColor("#FFB45C"),Color.parseColor("#FFD952"),
+                        Color.parseColor("#82FF6E"), Color.parseColor("#6EFFE5"),Color.parseColor("#5CBBFF")
+                        ,Color.parseColor("#9E52FF"),Color.parseColor("#FF6EC5"),Color.parseColor("#FFFFFF"),Color.parseColor("#000000") };
+                SimpleColorDialog.build()
+                        .colors(clr)
+                        .allowCustom(true)
+                        .show(MainActivity.this);
+            }
+        });
+
+        EditText title = new EditText(this);
+        title.setHint("Title");
+        title.setText(titletxt);
+
+        LinearLayout extra = new LinearLayout(this);
+        EditText description = new EditText(this);
+
+        EditText rating = new EditText(this);
+        rating.setHint("Rating");
+        if(ratingtxt>=0){
+            rating.setText(ratingtxt);
+        }
+
+        description.setHint("Description");
+        description.setGravity(Gravity.TOP);
+        description.setText(descriptiontxt);
+
+        extra.addView(description,width-240,300);
+        extra.addView(rating,240,150);
+        extra.setVisibility(View.GONE);
+
+        expandableLayout.addView(innerLinear);
+        expandableLayout.addView(extra);
+        expandableLayout.setOrientation(LinearLayout.VERTICAL);
+
+        ImageButton confirm = new ImageButton(this);
+        ImageButton expand = new ImageButton(this);
+        setButtonRipple(expand);
+        setButtonRipple(confirm);
+        confirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(currentAction.equals("newListItem")){
+                    addNewCheckListData(title.getText().toString(),color.getTag().toString(),null,description.getText().toString(),false,null);
+                    back(null);
+                    resetNotes();
+                }else if(currentAction.equals("editListItem")){
+                    CheckListData checkListData = checkListDataHelper.getWithId(String.valueOf(givenID)).get(0);
+                    checkListData.setTitle(title.getText().toString());
+                    checkListData.setDescription(description.getText().toString());
+                    checkListData.setColor(color.getTag().toString());
+                    checkListDataHelper.editCheckListData(checkListData);
+                    back(null);
+                    resetNotes();
+                }
+
+            }
+        });
+
+        confirm.setForeground(getResources().getDrawable(R.drawable.ic_baseline_check_24));
+        expand.setForeground(getResources().getDrawable(R.drawable.ic_baseline_expand_more_24));
+        expand.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                TransitionManager.beginDelayedTransition(cardView,
+                        new AutoTransition());
+                if(extra.getVisibility()==View.VISIBLE){
+                    extra.setVisibility(View.GONE);
+                    expand.setForeground(getResources().getDrawable(R.drawable.ic_baseline_expand_more_24));
+                }else{
+                    extra.setVisibility(View.VISIBLE);
+                    expand.setForeground(getResources().getDrawable(R.drawable.ic_baseline_expand_less_24));
+                }
+            }
+        });
+
+        cardView.addView(expandableLayout);
+
+        innerLinear.addView(color,120,120);
+        innerLinear.addView(title,width-(120*3),180);
+        innerLinear.addView(expand,120,120);
+        innerLinear.addView(confirm,120,120);
+
+        linearLayout.addView(cardView,position);
     }
 
     void testEdit(){
@@ -591,6 +919,19 @@ public class MainActivity extends AppCompatActivity implements SimpleDialog.OnDi
                 icon,password,false,"","","",type,
                 Calendar.getInstance().getTime().toString(),Calendar.getInstance().getTime().toString(),0,"",0);
         dataBaseHelper.addCheckList(checkLists);
+    }
+
+    CheckListDataHelper checkListDataHelper = new CheckListDataHelper(this);
+    void addNewCheckListData(String name, String color, String rating, String description, boolean urgent, String dateDue){
+        CheckListData checkListData = new CheckListData(-1, Integer.parseInt(openNote),name, color, description,null,urgent,false,rating,
+                10,dateDue,Calendar.getInstance().getTime().toString(),Calendar.getInstance().getTime().toString(),
+                null,null,null,null,null,null);
+        checkListDataHelper.addCheckListData(checkListData);
+        //increase number of notes by 1
+        CheckLists checkLists = dataBaseHelper.getWithId(String.valueOf(openNote)).get(0);
+        checkLists.setNumberInList(checkLists.getNumberInList()+1);
+        checkLists.setNumberUnticked(checkLists.getNumberUnticked()+1);
+        dataBaseHelper.editCheckList(checkLists);
     }
 
     void checkFirstLogin(){

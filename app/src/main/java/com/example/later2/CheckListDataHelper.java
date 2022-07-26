@@ -1,5 +1,6 @@
 package com.example.later2;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -88,6 +89,110 @@ public class CheckListDataHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return returnList;
+    }
+
+    public List<CheckListData> getWithId(String id){
+        List<CheckListData> returnList = new ArrayList<>();
+        //get Data
+        String queryString = "SELECT * FROM " + CHECKLISTDATA_TABLE + " WHERE " + ID + " = " + id;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(queryString,null);
+        if( cursor.moveToFirst()){
+            do{
+                int ID = cursor.getInt(0);
+                int FID = cursor.getInt(1);
+                String TITLE = cursor.getString(2);
+                String COLOR =cursor.getString(3);
+                String DESCRIPTION =cursor.getString(4);
+                String IMAGES =cursor.getString(5);
+                boolean URGENT =cursor.getInt(6)==1 ? true: false;
+                boolean TICKED =cursor.getInt(7)==1 ? true: false;
+                String RATING =cursor.getString(8);
+                int XP =cursor.getInt(9);
+                String DATEDUE =cursor.getString(10);
+                String DATECREATED =cursor.getString(11);
+                String DATEEDITED =cursor.getString(12);
+                String ITEMORDER =cursor.getString(13);
+                String LOCATION =cursor.getString(14);
+                String ICONIMAGE =cursor.getString(15);
+                String NOTE =cursor.getString(16);
+                String OTHER =cursor.getString(17);
+                String DRAWING =cursor.getString(18);
+
+                CheckListData checkListData = new CheckListData(ID, FID, TITLE, COLOR,DESCRIPTION,IMAGES,URGENT,TICKED,RATING, XP,DATEDUE,DATECREATED,DATEEDITED,ITEMORDER,LOCATION,ICONIMAGE,NOTE,OTHER,DRAWING);
+                returnList.add(checkListData);
+
+            }while (cursor.moveToNext());
+        }else{
+
+        }
+        cursor.close();
+        db.close();
+        return returnList;
+    }
+
+    public boolean addCheckListData(CheckListData checkListData){
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put(FID, checkListData.getFId());
+        cv.put(TITLE, checkListData.getTitle());
+        cv.put(COLOR, checkListData.getColor());
+        cv.put(DESCRIPTION, checkListData.getDescription());
+        cv.put(IMAGES, checkListData.getImages());
+        cv.put(URGENT, checkListData.isUrgent());
+        cv.put(TICKED, checkListData.isTicked());
+        cv.put(RATING, checkListData.getRating());
+        cv.put(XP, checkListData.getXp());
+        cv.put(DATEDUE, checkListData.getDateDue());
+        cv.put(DATECREATED, checkListData.getDateCreated());
+        cv.put(DATEEDITED, checkListData.getDateEdited());
+        cv.put(ITEMORDER, checkListData.getOrder());
+        cv.put(LOCATION, checkListData.getLocation());
+        cv.put(ICONIMAGE, checkListData.getIconImage());
+        cv.put(NOTE, checkListData.getNote());
+        cv.put(OTHER, checkListData.getOther());
+        cv.put(DRAWING, checkListData.getDrawing());
+
+        long insert = db.insert(CHECKLISTDATA_TABLE,null,cv);
+        if(insert ==-1){
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    public void editCheckListData(CheckListData checkListData){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String queryString = "UPDATE "+ CHECKLISTDATA_TABLE +
+                " SET " +
+                TITLE + " = '" + checkListData.getTitle() +"', "+
+                COLOR + " = '" + checkListData.getColor()+"', "+
+                DESCRIPTION+ " = '" + checkListData.getDescription()+"', "+
+                IMAGES+ " = '" + checkListData.getImages()+"', "+
+                URGENT+ " = " + checkListData.isUrgent()+", "+
+                TICKED+ " = " + checkListData.isTicked()+", "+
+                RATING+ " = '" + checkListData.getRating()+"', "+
+                //XP+ " = '" + checkListData.getXp()+"', "+
+                DATEDUE+ " = '" + checkListData.getDateDue()+"', "+
+                DATECREATED+ " = '" + checkListData.getDateCreated()+"', "+
+                DATEEDITED+ " = '" + checkListData.getDateEdited()+"', "+
+                ITEMORDER+ " = " + checkListData.getOrder()+", "+
+                LOCATION+ " = '" + checkListData.getLocation()+"', "+
+                ICONIMAGE+ " = " + checkListData.getIconImage()+
+                " WHERE " + ID + " = " + checkListData.getId();
+        db.execSQL(queryString);
+    }
+
+    public boolean deleteCheckListData(CheckListData checkListData){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String queryString = "DELETE FROM "+ CHECKLISTDATA_TABLE + " WHERE " + ID + " = " + checkListData.getId();
+        Cursor cursor = db.rawQuery(queryString, null);
+        if(cursor.moveToFirst()){
+            return true;
+        }else{
+            return false;
+        }
     }
 
 }
