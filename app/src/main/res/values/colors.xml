@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimaryLight">#c66900</color><!-- FFBB86FC -->
-    <color name="colorPrimary">#c66900</color><!-- FF6200EE -->
-    <color name="colorPrimaryDark">#c66900</color><!-- FF3700B3 -->
-    <color name="teal_200">#c66900</color>
-    <color name="teal_700">#c66900</color>
+    <color name="colorPrimaryLight">#937DFF</color><!-- c66900 -->
+    <color name="colorPrimary">#937DFF</color><!-- c66900 -->
+    <color name="colorPrimaryDark">#937DFF</color><!-- c66900 -->
+    <color name="teal_200">#937DFF</color>
+    <color name="teal_700">#937DFF</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="dkGrey">#FF202020</color>
+    <color name="ltGrey">#FFB0B0B0</color>
 </resources>
